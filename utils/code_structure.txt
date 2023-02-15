@@ -1,0 +1,24 @@
+
+
+Opening a socket:
+	->listen on it 										[x]
+	->infinite loop to wait connections					[x]
+		(might not be the thing to do actually)
+	->for each connection
+		->store the user informations in a structure
+		->in my vector of pollfd, adds a field with the new file descriptor
+		->use the poll() on the vector
+		->for each time poll() returns, loop through the vector to check the REVENT field
+		->if it is POLLIN:
+			- recv the file descriptor we are onto
+			- look for a \n, if none, wait for the next incoming data and concatenates it until a \n is found
+			- split the command on SPACE, and parse it
+				-The command will be in a buffer std::string
+				-The first part always is the CMD itself, in upper case
+				-Put the CMD in a string, then erase the CMD from the buffer
+				-During command execution, use parameters one by one then erase them from the buffer
+			-Execute the command
+				-If a command modify the USER structure or the CHANNEL structure, protect it with mutexes
+			-send the response to the connected user on this thread
+			-when user send an EXIT command, or disconnect, close the socket, remove the fd from the vector
+				and return.

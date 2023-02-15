@@ -1,0 +1,170 @@
+MESSAGES :
+2.3 Messages
+
+   Servers and clients send each other messages, which may or may not
+   generate a reply.  If the message contains a valid command, as
+   described in later sections, the client should expect a reply as
+   specified but it is not advised to wait forever for the reply; client
+   to server and server to server communication is essentially
+   asynchronous by nature.
+
+   Each IRC message may consist of up to three main parts: the prefix
+   (OPTIONAL), the command, and the command parameters (maximum of
+   fifteen (15)).  The prefix, command, and all parameters are separated
+   by one ASCII space character (0x20) each.
+
+   The presence of a prefix is indicated with a single leading ASCII
+   colon character (':', 0x3b), which MUST be the first character of the
+   message itself.  There MUST be NO gap (whitespace) between the colon
+   and the prefix.  The prefix is used by servers to indicate the true
+   origin of the message.  If the prefix is missing from the message, it
+   is assumed to have originated from the connection from which it was
+   received from.  Clients SHOULD NOT use a prefix when sending a
+   message; if they use one, the only valid prefix is the registered
+   nickname associated with the client.
+
+   The command MUST either be a valid IRC command or a three (3) digit
+   number represented in ASCII text.
+
+   IRC messages are always lines of characters terminated with a CR-LF
+   (Carriage Return - Line Feed) pair, and these messages SHALL NOT
+   exceed 512 characters in length, counting all characters including
+   the trailing CR-LF. Thus, there are 510 characters maximum allowed
+   for the command and its parameters.  There is no provision for
+   continuation of message lines.  See section 6 for more details about
+   current implementations.
+
+
+
+Connection Registration :
+
+	1. PASS message:
+		- PASS <password>
+			-Is not mandatory, but has to precede NICK/USER command
+			-Is used to set a 'connection password' for the user that comes after
+	
+		Replies: 
+			ERR_NEEDMOREPARAMS
+			ERR_ALREADYREGISTRED
+	
+	2.NICK message:
+		- NICK <nickname>
+			-Give or change the nickname of the user
+		
+		Replies:
+           ERR_NONICKNAMEGIVEN
+		   ERR_ERRONEUSNICKNAME
+           ERR_NICKNAMEINUSE
+		   ERR_NICKCOLLISION
+           ERR_UNAVAILRESOURCE
+		   ERR_RESTRICTED
+
+	3.USER message:
+		- USER <mode> <unused> <realname>
+			-specify the username, hostname and realname of a new USER
+			-The <mode> parameter should be a numeric, and can be used to
+			 automatically set user modes when registering with the server. This
+			 parameter is a bitmask, with only 2 bits having any signification: if
+			 the bit 2 is set, the user mode 'w' will be set and if the bit 3 is
+			 set, the user mode 'i' will be set.
+			 -The <realname> may contain space characters.
+
+		Replies:
+			ERR_NEEDMOREPARAMS
+			ERR_ALREADYREGISTRED
+
+At this point, and if the connection is successful server should send this reply:
+
+	- 001 RPL_WELCOME "Welcome to the Internet Relay Network <nick>!<user>@<host>"
+
+
+Commands to implement (simple user commands):
+
+	OPER:
+		- OPER <name> <password>
+			-a normal user uses this command to obtain operator privileges
+			-on success, the user receive a MODE message
+
+		Replies:
+			ERR_NEEDMOREPARAMS
+			RPL_YOUREOPER
+			ERR_NOOPERHOST
+			ERR_PASSWDMISMATCH
+
+	QUIT:
+		- QUIT <quit message>
+		-terminate the client session
+
+		Replies:
+			-server acknowledges this by sending an ERROR message to the client
+	
+Channel operations:
+
+		This group of messages is concerned with manipulating channels, their
+		properties (channel modes), and their contents (typically users).
+
+		All of these messages are requests which will or will not be granted
+		by the server.  The server MUST send a reply informing the user
+		whether the request was granted, denied or generated an error.  When
+		the server grants the request, the message is typically sent back
+		(eventually reformatted) to the user with the prefix set to the user
+		itself.
+
+		JOIN:
+			- JOIN ( <channel> *( "," <channel> ) [ <key> *("," <key> ) ] ) / "0"
+			-used by a user to request to start listening to the channel
+			-Once a user has joined a channel, he receives information about
+			 all commands his server receives affecting the channel.  This
+			 includes JOIN, MODE, KICK, PART, QUIT and of course PRIVMSG/NOTICE.
+			 This allows channel members to keep track of the other channel
+			 members, as well as channel modes.
+			-if JOIN is successful, send back a confirmation message to user, then send
+			 the topic using RPL_TOPIC, and then the list of users connected to channel
+			 using RPL_NAMEPLY, wich MUST include the user joining.
+			-the "0" special argument specify that the user would leave all other channels
+			 he is connected to (by sending PART to other)
+
+			Replies:
+				ERR_NEEDMOREPARAMS
+				ERR_BANNEDFROMCHAN
+				ERR_INVITEONLYCHAN
+				ERR_BADCHANNELKEY
+				ERR_CHANNELISFULL
+				ERR_BADCHANMASK
+				ERR_NOSUCHCHANNEL
+				ERR_TOOMANYCHANNELS
+				ERR_TOOMANYTARGETS
+				ERR_UNAVAILRESOURCE
+				RPL_TOPIC
+		
+		PART:
+			- PART <channel> *("," <channel>) [ <Part Message > ]
+			-causes the user to be removed from channel listed in parameters string
+			-if <Part Message> is given, this will be sent in place of default message, the nickname.
+
+			Replies:
+				ERR_NEEDMOREPARAMS
+				ERR_NOSUCHCHANNEL
+				ERR_NOTONCHANNEL
+
+Sending messages:
+		
+		PRIVMSG:
+			- PRIVMSG <msgtarget> <text to be sent>
+			-used to send priv msg between users, and to send msg to channels
+			-<msgtarget> is usually the nickname of recipient, or a channel name
+
+			Replies:
+				ERR_NORECIPIENT
+				ERR_NOTEXTTOSEND
+				ERR_CANNOTSENDTOCHAN							
+				ERR_NOTOPLEVEL
+				ERR_WILDTOPLEVEL																
+				ERR_TOOMANYTARGETS
+				ERR_NOSUCHNICK
+				RPL_AWAY
+
+		NOTICE:
+			- NOTICE <msgtarget> <txt>
+			-similar to PRIVMSG, difference is that there is no automatic replies in
+			 response to NOTICE. NEVER REPLY TO A NOTICE

@@ -1,0 +1,38 @@
+void    client_handler(int socket)
+{
+    // std::cout << "salut " << socket << std::endl;
+    std::string    buffer(1024, '\0');
+    std::string    cmd;
+    std::string    arg;
+    int            bit_read = 0;
+
+    while (1)
+    {
+        while (buffer[bit_read - 1] != '\n')
+        {
+            bit_read = bit_read + static_cast<int>(recv(socket, &buffer[bit_read], buffer.length(), 0));
+            // std::cout << "juste made a input " << bit_read << "\n";
+        }
+        std::cout << "input: " << buffer;
+        cmd = buffer.substr(0, buffer.find(' '));
+        std::cout << "commande: " << cmd << std::endl;
+        // if (buffer.find(' ') != std::string::npos)
+        // {
+        //     cmd = buffer.substr(0, buffer.find(' '));
+        //     std::cout << "commande: " << cmd << std::endl;
+        // }
+        if (cmd == "NICK")
+        {
+            arg = buffer.substr(buffer.find(' ') + 1, buffer.find('\0') - (buffer.find(' ') + 1));
+            std::cout << "size: " << arg.size();
+            std::cout << "arg: " << arg;
+            if (!check_nick(arg))
+                std::cout << "valid_nick\n";
+                // valid_nick();
+        }
+        else
+            std::cout << "Wrong input format\n";
+        buffer.replace(0, bit_read, bit_read, '\0');
+        bit_read = 0;
+    }
+}
